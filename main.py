@@ -3,6 +3,7 @@ from openai import OpenAI
 from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
+from statistical_catalog import MASTER_TESTS
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 api_key = os.getenv("OPENAI_API_KEY")
@@ -127,21 +128,7 @@ def extract_variables_from_text(conversation_history: str, current_known_state: 
     return updated_state
 
 # Section 5
-def generate_conversational_response(missing_variable: str, current_state: dict) -> str:
-    # Handle dynamic scale type flags for specific variables natively
-    if "measurement_level_for_" in missing_variable:
-        target_name = missing_variable.replace("measurement_level_for_", "")
-        prompt = f"Ask the user directly how the specific variable '{target_name}' is measured. Give brief examples like categorical (nominal), ranked (ordinal), or continuous numbers (interval_ratio). Keep it strictly to 2 sentences total. No greetings."
-        response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
-        return response.choices[0].message.content.strip()
 
-    variable_questions = {
-        "analysis_purpose": "What is the primary goal of your analysis? (e.g., comparing groups vs. looking for relationships)",
-        "independent_variables": "Can you list your independent variables?",
-        "dependent_variables": "Can you list your dependent variables?",
-        "data_pairing": "Can you let me know if your data groups are paired or unpaired?",
-        "is_normal_distribution": "Can you let me know if your continuous data is normally distributed?"
-    }
 def generate_conversational_response(missing_variable: str, current_state: dict) -> str:
     configs = {
         "analysis_purpose": {"q": "What is the primary goal of your analysis?", "e": "For example, are you trying to see if there is a difference between groups, or looking for an association?"},
@@ -152,24 +139,25 @@ def generate_conversational_response(missing_variable: str, current_state: dict)
     }
     config = configs.get(missing_variable, {"q": "Can you clarify the next detail regarding your data?", "e": "Please provide a brief description of your variables."})
     prompt = f"Ask for missing property using exact pattern. QUESTION: '{config['q']}' EXAMPLES: '{config['e']}' INSTRUCTIONS: Deliver ONLY the direct question followed immediately by the examples. Exactly 2 sentences total."
-    response = client.client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}]) if hasattr(client, 'client') else client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
+    response = client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}]) if hasattr(client, 'client') else client.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": prompt}])
     return response.choices[0].message.content.strip()
-
-print("====================================================\n🎓 SAGE STATS ADVISOR: INITIALIZED (UNIVERSAL RUNTIME)\nDescribe your research project below.\n====================================================\n")
-current_state = {"analysis_purpose": None, "group_count": None, "data_pairing": None, "measurement_level": None, "is_normal_distribution": None}
-transcript = ""
-while True:
-    user_input = input("You: ")
-    if user_input.strip().lower() == "exit": break
-    transcript += f"\nUser: {user_input}"
-    print("\n[Analyzing data properties...]")
-    current_state = extract_variables_from_text(transcript, current_state)
-    print(f"📊 Running State Ledger: {current_state}")
-    evaluation = evaluate_decision_tree(current_state)
-    if evaluation["status"] == "complete":
-        print(f"\n🎯 RECOMMENDED STATISTICAL METHOD: {evaluation['test']}\n")
-        break
-    else:
-        ai_question = generate_conversational_response(evaluation["ask_for"], current_state)
-        print(f"\nAdvisor: {ai_question}\n")
-        transcript += f"\nAdvisor: {ai_question}"
+# Force your terminal loop to stay quiet during visual web imports
+if __name__ == "__main__":
+    print("====================================================\n🎓 SAGE STATS ADVISOR: INITIALIZED (UNIVERSAL RUNTIME)\nDescribe your research project below.\n====================================================\n")
+    current_state = {"analysis_purpose": None, "group_count": None, "data_pairing": None, "measurement_level": None, "is_normal_distribution": None}
+    transcript = ""
+    while True:
+        user_input = input("You: ")
+        if user_input.strip().lower() == "exit": break
+        transcript += f"\nUser: {user_input}"
+        print("\n[Analyzing data properties...]")
+        current_state = extract_variables_from_text(transcript, current_state)
+        print(f"📊 Running State Ledger: {current_state}")
+        evaluation = evaluate_decision_tree(current_state)
+        if evaluation["status"] == "complete":
+            print(f"\n🎯 RECOMMENDED STATISTICAL METHOD: {evaluation['test']}\n")
+            break
+        else:
+            ai_question = generate_conversational_response(evaluation["ask_for"], current_state)
+            print(f"\nAdvisor: {ai_question}\n")
+            transcript += f"\nAdvisor: {ai_question}"
