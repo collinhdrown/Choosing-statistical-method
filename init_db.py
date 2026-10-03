@@ -49,10 +49,6 @@ def build_database():
         ("Multiple Linear Regression", "relation", "None", "More than 1", "1", "Mixed", "Interval/Ratio", "any", "True", "False"),
         ("Binary Logistic Regression", "relation", "None", "Any", "1", "Mixed", "Nominal", "any", "Any", "False"),
         ("Hierarchical Linear Modeling (HLM)", "relation", "None", "More than 1", "1", "Mixed", "Interval/Ratio", "any", "Any", "False"),
-
-        # --- DATA REDUCTION BYPASSES ---
-        ("Factor Analysis", "factor", "Any", "Any", "Any", "Any", "Any", "any", "Any", "Any"),
-        ("Cluster Analysis", "cluster", "Any", "Any", "Any", "Any", "Any", "any", "Any", "Any")
     ]
 
     # Batch execute atomic SQL insertion queries

@@ -34,8 +34,6 @@ ATTRIBUTES: list[Attribute] = [
         "difference": "Compare groups or conditions",
         "association": "See whether variables are related",
         "prediction": "Predict an outcome from predictors",
-        "reduce_variables": "Find underlying dimensions in many variables",
-        "group_cases": "Group similar participants/cases",
     }),
     Attribute("dv_count", "Outcomes", "How many outcome (dependent) variables do you have?", {
         "one": "One", "many": "More than one"}),
@@ -197,12 +195,6 @@ add_test("Multivariate Multiple Regression",
          {"purpose": "prediction", "dv_count": "many", "dv_type": "continuous", "nested": "no"})
 add_test("Canonical Correlation Analysis",
          {"purpose": "association", "dv_count": "many", "dv_type": "continuous", "nested": "no"})
-
-# ---- Structure discovery -----------------------------------------------------------
-add_test("Factor Analysis", {"purpose": "reduce_variables"},
-         note="Groups correlated VARIABLES into latent factors.")
-add_test("Cluster Analysis", {"purpose": "group_cases"},
-         note="Groups similar CASES (participants) into clusters.")
 
 
 # ========================================================
