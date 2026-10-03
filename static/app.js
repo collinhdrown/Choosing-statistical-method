@@ -8,7 +8,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-let catalog = { families: {}, tests: [] };
+let catalog = { tests: [] };
 let byName = {};
 let answers = {};          // raw answers, including facts the advisor heard ahead of their question
 let view = null;           // last view from the server
@@ -27,21 +27,19 @@ async function api(path, body) {
 
 /* ========== bubble field ========== */
 const W = 1000, H = 720;
-const wrap = $("svgwrap"), tip = $("tip");
+const wrap = $("svgwrap"), card = $("card");
 const svg = d3.select(wrap).append("svg").attr("viewBox", `0 0 ${W} ${H}`)
-  .attr("role", "img").attr("aria-label", "Tests still in play");
+  .attr("role", "img").attr("aria-label", "Possible matches");
 const gRoot = svg.append("g");
 const measurer = svg.append("text").attr("visibility", "hidden")
   .style("font-family", "Figtree, system-ui, sans-serif").style("font-weight", 600);
 let preview = null;        // Set of names an option under the pointer would keep
 
-const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+// Each test gets its own muted green, fixed per name so it never changes between updates.
 function colorFor(name) {
-  const t = byName[name];
-  const base = d3.hsl(cssVar("--f-" + (t ? t.family : "compare")));
   let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) | 0;
-  base.l = Math.max(0.18, Math.min(0.62, base.l + ((Math.abs(h) % 7) - 3) * 0.025));
-  return base.toString();
+  h = Math.abs(h);
+  return d3.hsl(75 + (h % 80), (22 + ((h >> 5) % 20)) / 100, (26 + ((h >> 9) % 20)) / 100).toString();
 }
 
 const widthAt = (s, f) => { measurer.style("font-size", f + "px").text(s); return measurer.node().getComputedTextLength(); };
@@ -76,7 +74,8 @@ function drawField(active) {
   const enter = sel.enter().append("g").attr("class", "bubble").attr("transform", d => `translate(${d.x},${d.y})`);
   enter.append("circle").attr("r", 0);
   enter.append("text").attr("text-anchor", "middle");
-  enter.on("mousemove", (ev, d) => showTip(ev, d.data.name)).on("mouseleave", () => { tip.hidden = true; });
+  enter.on("mousemove", (ev, d) => showCard(ev, d.data.name)).on("mouseleave", hideCard)
+    .on("click", (ev, d) => { ev.stopPropagation(); showCard(ev, d.data.name); });
 
   const all = enter.merge(sel);
   all.transition().duration(dur).ease(d3.easeCubicOut).attr("transform", d => `translate(${d.x},${d.y})`);
@@ -99,16 +98,33 @@ function applyPreview() {
     .classed("lit", d => !!preview && preview.size <= 3 && preview.has(d.data.name));
 }
 
-function showTip(ev, name) {
-  const t = byName[name] || {};
-  tip.innerHTML = `<small>${esc(catalog.families[t.family] || "")}</small><b>${esc(name)}</b>${t.note ? `<span>${esc(t.note)}</span>` : ""}`;
-  tip.hidden = false;
-  const r = wrap.getBoundingClientRect();
-  let x = ev.clientX - r.left + 14;
-  const y = ev.clientY - r.top + 14;
-  if (x + 260 > r.width) x = Math.max(0, ev.clientX - r.left - 270);
-  tip.style.left = x + "px"; tip.style.top = y + "px";
+/* ========== test cards ========== */
+const short = label => label.replace(/\s*\(.*\)$/, "");
+function showCard(ev, name) {
+  const t = byName[name];
+  if (!t) return;
+  if (card.dataset.name !== name) {
+    card.dataset.name = name;
+    card.style.setProperty("--card", colorFor(name));
+    card.innerHTML = `
+      <div class="band"><h3>${esc(name)}</h3></div>
+      <div class="body">
+        <p class="summary">${esc(t.summary)}</p>
+        ${t.requirements.length ? `<dl>${t.requirements.map(r =>
+          `<dt>${esc(r.short)}</dt><dd>${r.values.map(v => esc(short(v))).join(" or ")}</dd>`).join("")}</dl>` : ""}
+        <div class="example"><span class="label">Real-world example</span><p>${esc(t.example)}</p></div>
+      </div>`;
+  }
+  card.hidden = false;
+  const pad = 16, w = card.offsetWidth, h = card.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 8) x = Math.max(8, ev.clientX - w - pad);
+  if (y + h > innerHeight - 8) y = Math.max(8, innerHeight - h - 8);
+  card.style.left = x + "px"; card.style.top = y + "px";
 }
+function hideCard() { card.hidden = true; }
+document.addEventListener("click", hideCard);
+document.addEventListener("scroll", hideCard, { passive: true });
 
 /* ========== left column ========== */
 function renderPath() {
@@ -120,15 +136,13 @@ function renderPath() {
 
 function questionCard(q) {
   return `<div class="card q">
-    <div class="head"><span class="label">Question ${q.number}</span><span class="label">${esc(q.short)}</span></div>
+    <span class="label">${esc(q.short)}</span>
     <h2>${esc(q.question)}</h2>
     ${q.hint ? `<p class="hint">${esc(q.hint)}</p>` : ""}
     <div class="opts">${q.options.map((o, i) => {
-      const n = o.remaining.length;
-      return `<button class="opt ${n ? "" : "dead"}" style="--i:${i}" data-i="${i}" type="button">
-        <span class="key">${i + 1}</span><span class="t">${esc(o.label)}</span><span class="n">${n ? `${n} left` : "no match"}</span></button>`;
+      return `<button class="opt ${o.remaining.length ? "" : "dead"}" style="--i:${i}" data-i="${i}" type="button">
+        <span class="key">${i + 1}</span><span class="t">${esc(o.label)}</span></button>`;
     }).join("")}</div>
-    <div class="qfoot"><span>Hover an answer to preview what it keeps.</span><span><kbd>1</kbd>–<kbd>${q.options.length}</kbd> to answer, <kbd>⌫</kbd> to undo</span></div>
   </div>`;
 }
 
@@ -150,11 +164,11 @@ function resultCard(r) {
 }
 
 function renderTray() {
-  const gone = Object.entries(view.eliminated);
+  const gone = Object.keys(view.eliminated);
   $("traylabel").textContent = `Ruled out (${gone.length})`;
   $("tray").innerHTML = gone.length
-    ? gone.reverse().map(([n, by]) => `<span class="gone"><s>${esc(n)}</s><em>${esc(by)}</em></span>`).join("")
-    : `<span class="none">Tests you rule out collect here, tagged with the answer that removed them.</span>`;
+    ? gone.reverse().map(n => `<span class="gone" data-name="${esc(n)}">${esc(n)}</span>`).join("")
+    : `<span class="none">Tests your answers rule out collect here.</span>`;
 }
 
 function render() {
@@ -236,6 +250,13 @@ document.addEventListener("mouseover", e => {
   if (!same(next, preview)) { preview = next; applyPreview(); }
 });
 
+// Ruled-out chips show the same card as the bubbles.
+$("tray").addEventListener("mousemove", e => {
+  const g = e.target.closest(".gone");
+  if (g) showCard(e, g.dataset.name); else hideCard();
+});
+$("tray").addEventListener("mouseleave", hideCard);
+
 document.addEventListener("keydown", e => {
   if (e.target.closest("textarea, input")) return;
   if (e.key === "Backspace" && view && view.path.length) { e.preventDefault(); return undoFrom(view.path[view.path.length - 1].key); }
@@ -260,19 +281,9 @@ $("reset").onclick = () => {
   update({}, null);
 };
 
-$("theme").onclick = () => {
-  const root = document.documentElement;
-  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  root.dataset.theme = dark ? "light" : "dark";
-  try { localStorage.setItem("theme", root.dataset.theme); } catch (err) {}
-  gRoot.selectAll("g.bubble circle").attr("fill", d => colorFor(d.data.name));
-};
-
 /* ========== start ========== */
 (async function start() {
   catalog = await api("/api/catalog");
   byName = Object.fromEntries(catalog.tests.map(t => [t.name, t]));
-  $("legend").innerHTML = Object.entries(catalog.families)
-    .map(([k, n]) => `<span><i style="background:var(--f-${esc(k)})"></i>${esc(n)}</span>`).join("");
   await update({}, null);
 })();

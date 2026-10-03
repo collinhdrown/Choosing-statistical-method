@@ -27,27 +27,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 # ========================================================
-# 1. TEST FAMILIES — colour groups for the bubble field
-# ========================================================
-FAMILIES = {
-    "compare": "Compare groups",
-    "relate": "Relationships",
-    "predict": "Prediction",
-    "multi": "Several outcomes",
-}
-
-
-def family(test: se.Test) -> str:
-    """Bucket a test by its first path, so the UI can colour it by what it's for."""
-    first = test.paths[0]
-    if first.get("dv_count") == frozenset({"many"}):
-        return "multi"
-    purpose = sorted(first.get("purpose", {"difference"}))[0]
-    return {"association": "relate", "prediction": "predict"}.get(purpose, "compare")
-
-
-# ========================================================
-# 2. VIEW — everything the page draws for a set of answers
+# 1. VIEW — everything the page draws for a set of answers
 # ========================================================
 def build_view(answers: dict) -> dict:
     """Canonicalize the answers and describe the resulting state for the UI.
@@ -87,7 +67,6 @@ def build_view(answers: dict) -> dict:
             "short": attr.short,
             "question": attr.question,
             "hint": attr.hint,
-            "number": len(canon) + 1,
             "options": [
                 {
                     "value": value,
@@ -127,7 +106,7 @@ def what_ifs(canon: dict, current: str, limit: int = 4) -> list[dict]:
 
 
 # ========================================================
-# 3. ROUTES
+# 2. ROUTES
 # ========================================================
 class StateRequest(BaseModel):
     answers: dict[str, str] = {}
@@ -151,9 +130,18 @@ def index():
 
 @app.get("/api/catalog")
 def catalog():
+    """Everything the hover cards show for each test."""
     return {
-        "families": FAMILIES,
-        "tests": [{"name": t.name, "note": t.note, "family": family(t)} for t in se.TESTS],
+        "tests": [
+            {
+                "name": t.name,
+                "note": t.note,
+                "summary": se.TEST_INFO[t.name][0],
+                "example": se.TEST_INFO[t.name][1],
+                "requirements": [{"short": short, "values": values} for short, values in se.requirements(t)],
+            }
+            for t in se.TESTS
+        ],
     }
 
 

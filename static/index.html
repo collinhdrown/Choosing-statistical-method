@@ -8,10 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="/static/app.css">
-<script>
-  // Apply a saved theme before first paint so the page doesn't flash.
-  try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
-</script>
 </head>
 <body>
 <div class="app">
@@ -21,11 +17,7 @@
       <p>Answer one question at a time, or describe your study in words. Every answer knocks out the tests that no longer fit.</p>
     </div>
     <div class="right-head">
-      <div class="stat"><span class="k">Tests in play</span><span class="v" id="count">&nbsp;</span></div>
-      <div class="head-btns">
-        <button class="chipbtn" id="reset" type="button">Start over</button>
-        <button class="chipbtn" id="theme" type="button" aria-label="Switch between light and dark">Theme</button>
-      </div>
+      <div class="stat"><span class="k">Possible matches</span><span class="v" id="count">&nbsp;</span></div>
     </div>
   </header>
 
@@ -35,7 +27,6 @@
       <div class="transcript" id="transcript" aria-live="polite"></div>
       <textarea id="desc" placeholder="e.g. I measured anxiety in the same 30 students before and after a mindfulness course. The scores are skewed."></textarea>
       <div class="bar">
-        <span>The advisor fills in the answers it can find. <kbd>Enter</kbd> to send.</span>
         <button class="btn primary" id="send" type="submit">Send</button>
       </div>
     </form>
@@ -46,20 +37,21 @@
     </div>
 
     <div id="stage"></div>
+
+    <button class="btn reset" id="reset" type="button">Start over</button>
   </section>
 
-  <section class="card field" aria-label="Tests still in play">
-    <div class="head">
-      <span class="label">Tests still in play</span>
-      <div class="legend" id="legend"></div>
-    </div>
-    <div id="svgwrap"><div class="tip" id="tip" hidden></div></div>
+  <section class="card field" aria-label="Possible matches">
+    <span class="label">Possible Matches</span>
+    <div id="svgwrap"></div>
     <div class="tray">
       <span class="label" id="traylabel">Ruled out</span>
       <div class="list" id="tray"></div>
     </div>
   </section>
 </div>
+
+<div class="testcard" id="card" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="/static/app.js"></script>
