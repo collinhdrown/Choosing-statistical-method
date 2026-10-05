@@ -237,7 +237,7 @@ async function send(message) {
 }
 
 document.addEventListener("click", e => {
-  const o = e.target.closest(".opt");
+  const o = e.target.closest("#view-match .opt");
   if (o) { const q = view.question, opt = q.options[+o.dataset.i]; return update({ ...answers, [q.key]: opt.value }, q.key); }
   const a = e.target.closest(".ans");
   if (a) return undoFrom(a.dataset.k);
@@ -246,7 +246,7 @@ document.addEventListener("click", e => {
 });
 
 document.addEventListener("mouseover", e => {
-  const o = e.target.closest(".opt");
+  const o = e.target.closest("#view-match .opt");
   const next = o && view.question ? new Set(view.question.options[+o.dataset.i].remaining) : null;
   const same = (a, b) => a === b || (a && b && a.size === b.size && [...a].every(x => b.has(x)));
   if (!same(next, preview)) { preview = next; applyPreview(); }
@@ -263,7 +263,7 @@ document.addEventListener("keydown", e => {
   if (e.target.closest("textarea, input") || $("view-match").hidden) return;
   if (e.key === "Backspace" && view && view.path.length) { e.preventDefault(); return undoFrom(view.path[view.path.length - 1].key); }
   const n = parseInt(e.key, 10);
-  const btn = n ? document.querySelectorAll(".opt")[n - 1] : null;
+  const btn = n ? document.querySelectorAll("#view-match .opt")[n - 1] : null;
   if (btn) btn.click();
 });
 

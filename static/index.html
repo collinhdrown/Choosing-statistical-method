@@ -23,6 +23,7 @@
   <nav class="tabs" aria-label="Sections">
     <a href="#" class="tab" data-tab="match">Method Matcher</a>
     <a href="#explore" class="tab" data-tab="explore">Explore tests</a>
+    <a href="#quiz" class="tab" data-tab="quiz">Quiz yourself</a>
   </nav>
 </header>
 
@@ -61,6 +62,11 @@
   <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
   <div id="xpage"></div>
 </main>
+
+<main class="quiz" id="view-quiz" hidden>
+  <nav class="crumbs" id="qcrumbs" aria-label="Breadcrumb"></nav>
+  <div id="qpage"></div>
+</main>
 </div>
 
 <div class="testcard" id="card" hidden></div>
@@ -68,6 +74,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="/static/app.js"></script>
+<script src="/static/quiz.js"></script>
 <script src="/static/explore.js"></script>
 </body>
 </html>

@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import quiz_bank
 import stat_engine as se
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -153,6 +154,12 @@ def catalog():
 @app.post("/api/state")
 def state(req: StateRequest):
     return build_view(req.answers)
+
+
+@app.get("/api/quizzes")
+def quizzes():
+    """The Quiz Yourself tab's questions; quiz_bank checks its answers against stat_engine."""
+    return quiz_bank.quizzes()
 
 
 def _advisor():
