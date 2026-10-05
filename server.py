@@ -166,8 +166,9 @@ def _advisor():
     except SystemExit:
         raise HTTPException(
             status_code=503,
-            detail="The advisor needs OPENAI_API_KEY in a .env file beside main.py. "
-                   "You can still answer the questions directly.",
+            detail="The advisor needs an OPENAI_API_KEY environment variable (set it in your "
+                   "host's environment settings, or in a .env file beside main.py when running "
+                   "locally). You can still answer the questions directly.",
         )
     return main
 
