@@ -197,6 +197,123 @@ add_test("Canonical Correlation Analysis",
          {"purpose": "association", "dv_count": "many", "dv_type": "continuous", "nested": "no"})
 
 
+# ---- Test cards: one-sentence summary + a real-world example, shown on hover in the web app.
+# Every test in the catalog needs an entry; a missing or stray name fails at import time.
+TEST_INFO: dict[str, tuple[str, str]] = {
+    "Independent Samples t-test": (
+        "Compares the means of two separate groups on a normally distributed outcome.",
+        "Comparing average exam scores of students taught online versus in person."),
+    "Mann-Whitney U Test": (
+        "Compares two separate groups when the outcome is ranked or not normally distributed.",
+        "Comparing pain ratings (0-10) between patients given a new drug and a placebo."),
+    "Paired Samples t-test": (
+        "Compares two measurements from the same people on a normally distributed outcome.",
+        "Comparing blood pressure in the same patients before and after a diet program."),
+    "Wilcoxon Signed-Rank Test": (
+        "Compares two measurements from the same people when the outcome is ranked or skewed.",
+        "Comparing anxiety scores of the same students before and after a mindfulness course."),
+    "One-Way ANOVA": (
+        "Compares the means of three or more separate groups on a normally distributed outcome.",
+        "Comparing crop yield across fields treated with three different fertilizers."),
+    "Kruskal-Wallis H Test": (
+        "Compares three or more separate groups when the outcome is ranked or not normally distributed.",
+        "Comparing customer satisfaction ratings across four store locations."),
+    "Repeated Measures ANOVA": (
+        "Compares the means of three or more measurements taken on the same people.",
+        "Tracking reaction time in the same drivers after 0, 1 and 2 drinks."),
+    "Friedman Test": (
+        "Compares three or more measurements on the same people when the outcome is ranked or skewed.",
+        "Having the same tasters rank three coffee blends."),
+    "Chi-Square Test of Independence": (
+        "Tests whether two categorical variables are related by comparing observed and expected counts.",
+        "Checking whether voting preference differs between age groups."),
+    "McNemar's Test": (
+        "Compares a yes/no outcome measured twice on the same people.",
+        "Checking whether more people pass a driving test after a refresher course than before."),
+    "Cochran's Q Test": (
+        "Compares a yes/no outcome measured three or more times on the same people.",
+        "Checking whether the same users complete a task on three website designs."),
+    "Factorial ANOVA": (
+        "Tests the effects of two or more grouping factors, and their interaction, on one outcome.",
+        "Testing how teaching method and class size together affect test scores."),
+    "Mixed / Repeated-Measures Factorial ANOVA": (
+        "Tests several factors when at least one is measured repeatedly on the same people.",
+        "Comparing therapy and control groups on depression scores at three time points."),
+    "Aligned Rank Transform (ART) ANOVA": (
+        "Runs a factorial ANOVA on aligned ranks, for ranked or non-normal outcomes with several factors.",
+        "Testing how font and screen size together affect 1-7 readability ratings."),
+    "ANCOVA": (
+        "Compares group means while adjusting for a continuous covariate such as a baseline score.",
+        "Comparing final scores across tutoring programs while controlling for pre-test scores."),
+    "Quade's Nonparametric ANCOVA": (
+        "Compares groups while adjusting for a covariate, without assuming a normal outcome.",
+        "Comparing skewed hospital stay lengths across treatments, adjusting for patient age."),
+    "Linear Mixed-Effects Model": (
+        "Models repeated measurements with fixed effects and random effects for each person, including covariates.",
+        "Modeling weekly weight across diet groups while adjusting for starting weight."),
+    "One-Way MANOVA": (
+        "Compares groups on several related continuous outcomes at once.",
+        "Comparing three training programs on both speed and endurance."),
+    "Factorial MANOVA": (
+        "Tests two or more grouping factors on several related continuous outcomes at once.",
+        "Testing how sleep schedule and caffeine affect both memory and attention scores."),
+    "MANCOVA": (
+        "Compares groups on several continuous outcomes while adjusting for a covariate.",
+        "Comparing reading and math scores across schools while controlling for family income."),
+    "PERMANOVA (non-parametric MANOVA)": (
+        "Compares groups on several outcomes using permutations, without assuming normality.",
+        "Comparing gut microbiome composition between diet groups."),
+    "Hierarchical Linear Model (HLM)": (
+        "Models an outcome when observations are nested within groups, such as students within schools.",
+        "Studying how teacher experience affects student scores across 40 schools."),
+    "Pearson's r Correlation": (
+        "Measures the strength of a straight-line relationship between two normally distributed variables.",
+        "Measuring how strongly height and weight are related in adults."),
+    "Spearman's Rank Correlation": (
+        "Measures how consistently two variables rise or fall together using their ranks.",
+        "Relating class rank to self-rated confidence (1-5)."),
+    "Point-Biserial Correlation": (
+        "Measures the relationship between a two-category variable and a continuous variable.",
+        "Relating smoker status (yes/no) to lung capacity."),
+    "Rank-Biserial Correlation": (
+        "Measures the relationship between a two-category variable and a ranked or skewed variable.",
+        "Relating gender to 1-5 agreement ratings on a survey item."),
+    "Simple Linear Regression": (
+        "Predicts a continuous outcome from one predictor with a straight line.",
+        "Predicting monthly electricity cost from average temperature."),
+    "Multiple Linear Regression": (
+        "Predicts a continuous outcome from several predictors at once.",
+        "Predicting house price from size, age and neighborhood."),
+    "Binary Logistic Regression": (
+        "Predicts the probability of a yes/no outcome from one or more predictors.",
+        "Predicting whether a patient is readmitted within 30 days from age and diagnosis."),
+    "Ordinal Logistic Regression": (
+        "Predicts an ordered outcome, such as low, medium or high, from predictors.",
+        "Predicting a 1-5 customer rating from wait time and price."),
+    "Multivariate Multiple Regression": (
+        "Predicts several continuous outcomes at once from the same set of predictors.",
+        "Predicting both GPA and graduation time from study hours and work hours."),
+    "Canonical Correlation Analysis": (
+        "Finds the strongest relationships between two sets of continuous variables.",
+        "Relating a set of personality scores to a set of job performance measures."),
+}
+if set(TEST_INFO) != {t.name for t in TESTS}:
+    raise ValueError(f"TEST_INFO and TESTS disagree: {set(TEST_INFO) ^ {t.name for t in TESTS}}")
+
+
+def requirements(test: Test) -> list[tuple[str, list[str]]]:
+    """What a test needs, in question order: (attribute short label, allowed option labels).
+
+    Merges all of the test's paths; an attribute any path leaves open is left out."""
+    out = []
+    for attr in ATTRIBUTES:
+        if not all(attr.key in p for p in test.paths):
+            continue
+        allowed = set().union(*(p[attr.key] for p in test.paths))
+        out.append((attr.short, [lbl for v, lbl in attr.options.items() if v in allowed]))
+    return out
+
+
 # ========================================================
 # 3. ENGINE
 # ========================================================
