@@ -23,7 +23,7 @@ load_dotenv(env_file_path)
 
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    print(f"⚠️ Key Configuration Error: Could not read OPENAI_API_KEY from absolute path: {env_file_path}")
+    print(f"⚠️ Key Configuration Error: OPENAI_API_KEY is not set in the environment or in {env_file_path}")
     sys.exit(1)
 
 client = OpenAI(api_key=api_key)

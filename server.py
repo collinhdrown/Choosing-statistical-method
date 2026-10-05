@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import quiz_bank
 import stat_engine as se
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -155,6 +156,12 @@ def state(req: StateRequest):
     return build_view(req.answers)
 
 
+@app.get("/api/quizzes")
+def quizzes():
+    """The Quiz Yourself tab's questions; quiz_bank checks its answers against stat_engine."""
+    return quiz_bank.quizzes()
+
+
 def _advisor():
     """Import main.py's OpenAI helpers on first use.
 
@@ -166,8 +173,9 @@ def _advisor():
     except SystemExit:
         raise HTTPException(
             status_code=503,
-            detail="The advisor needs OPENAI_API_KEY in a .env file beside main.py. "
-                   "You can still answer the questions directly.",
+            detail="The advisor needs an OPENAI_API_KEY environment variable (set it in your "
+                   "host's environment settings, or in a .env file beside main.py when running "
+                   "locally). You can still answer the questions directly.",
         )
     return main
 
