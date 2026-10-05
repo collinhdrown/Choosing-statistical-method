@@ -6,6 +6,7 @@
  */
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let catalog = { tests: [] };
@@ -152,6 +153,7 @@ function resultCard(r) {
     return `<div class="card result">
       <div><span class="label">Recommended test</span><h2>${esc(r.test)}</h2></div>
       ${r.note ? `<p>${esc(r.note)}</p>` : ""}
+      <a class="more" href="#explore/${slug(r.test)}">See how the ${esc(r.test)} works</a>
       <p class="sub">Matched on ${view.path.length} answers. Tap an answer chip to change it.</p>
       ${view.what_ifs.length ? `<div class="whatif"><span class="label">If one answer were different</span>${view.what_ifs.map((w, i) =>
         `<button type="button" data-wi="${i}"><span>${esc(w.short)}: ${esc(w.label)}</span><b>${esc(w.test)}</b></button>`).join("")}</div>` : ""}
@@ -258,7 +260,7 @@ $("tray").addEventListener("mousemove", e => {
 $("tray").addEventListener("mouseleave", hideCard);
 
 document.addEventListener("keydown", e => {
-  if (e.target.closest("textarea, input")) return;
+  if (e.target.closest("textarea, input") || $("view-match").hidden) return;
   if (e.key === "Backspace" && view && view.path.length) { e.preventDefault(); return undoFrom(view.path[view.path.length - 1].key); }
   const n = parseInt(e.key, 10);
   const btn = n ? document.querySelectorAll(".opt")[n - 1] : null;
@@ -282,8 +284,8 @@ $("reset").onclick = () => {
 };
 
 /* ========== start ========== */
-(async function start() {
-  catalog = await api("/api/catalog");
+const catalogReady = api("/api/catalog").then(data => {
+  catalog = data;
   byName = Object.fromEntries(catalog.tests.map(t => [t.name, t]));
-  await update({}, null);
-})();
+});
+catalogReady.then(() => update({}, null));
