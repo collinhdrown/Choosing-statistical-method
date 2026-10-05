@@ -301,6 +301,311 @@ if set(TEST_INFO) != {t.name for t in TESTS}:
     raise ValueError(f"TEST_INFO and TESTS disagree: {set(TEST_INFO) ^ {t.name for t in TESTS}}")
 
 
+# ---- Families: how the Explore tab groups the tests in its dropdown. Every test belongs to
+# exactly one family; a missing, stray or doubled name fails at import time.
+TEST_FAMILIES: list[tuple[str, str, list[str]]] = [
+    ("t-tests", "Compare the means of two groups or two measurements on a normally distributed outcome.", [
+        "Independent Samples t-test", "Paired Samples t-test"]),
+    ("ANOVA Family", "Split the variation in one continuous outcome into parts explained by groups, factors and covariates.", [
+        "One-Way ANOVA", "Repeated Measures ANOVA", "Factorial ANOVA",
+        "Mixed / Repeated-Measures Factorial ANOVA", "ANCOVA"]),
+    ("Rank-Based Comparisons", "Compare groups using ranks instead of raw values, for ranked or skewed outcomes.", [
+        "Mann-Whitney U Test", "Wilcoxon Signed-Rank Test", "Kruskal-Wallis H Test", "Friedman Test",
+        "Aligned Rank Transform (ART) ANOVA", "Quade's Nonparametric ANCOVA"]),
+    ("Categorical Outcomes", "Compare counts and proportions when the outcome is a category such as yes/no.", [
+        "Chi-Square Test of Independence", "McNemar's Test", "Cochran's Q Test"]),
+    ("MANOVA Family", "Compare groups on several related outcomes at once.", [
+        "One-Way MANOVA", "Factorial MANOVA", "MANCOVA", "PERMANOVA (non-parametric MANOVA)"]),
+    ("Correlation", "Measure how strongly two variables, or two sets of variables, move together.", [
+        "Pearson's r Correlation", "Spearman's Rank Correlation", "Point-Biserial Correlation",
+        "Rank-Biserial Correlation", "Canonical Correlation Analysis"]),
+    ("Regression & Mixed Models", "Model an outcome as an equation of its predictors.", [
+        "Simple Linear Regression", "Multiple Linear Regression", "Binary Logistic Regression",
+        "Ordinal Logistic Regression", "Multivariate Multiple Regression",
+        "Linear Mixed-Effects Model", "Hierarchical Linear Model (HLM)"]),
+]
+_in_families = [n for _, _, names in TEST_FAMILIES for n in names]
+if sorted(_in_families) != sorted(t.name for t in TESTS):
+    raise ValueError(f"TEST_FAMILIES and TESTS disagree: {set(_in_families) ^ {t.name for t in TESTS}}")
+
+
+# ---- Equations shown on each test's Explore page: (label, LaTeX, the same equation in words).
+# Color coding: in the LaTeX, \ca{...} through \cf{...} paint a term with color a-f; in the words,
+# [a:...] paints the matching phrase the same color, so each symbol lines up with its meaning.
+TEST_EQUATIONS: dict[str, list[tuple[str, str, str]]] = {
+    "Independent Samples t-test": [
+        ("Test statistic",
+         r"t = \frac{\ca{\bar{x}_1 - \bar{x}_2}}{\cb{s_p}\sqrt{\cc{\tfrac{1}{n_1} + \tfrac{1}{n_2}}}}",
+         "t = [a:difference between the two group means] ÷ ([b:pooled standard deviation] × √[c:(1 ÷ size of group 1 + 1 ÷ size of group 2)])"),
+        ("Pooled standard deviation",
+         r"\cb{s_p} = \sqrt{\frac{\cd{(n_1-1)s_1^2 + (n_2-1)s_2^2}}{\ce{n_1 + n_2 - 2}}}",
+         "[b:pooled standard deviation] = √([d:each group's variance, weighted by its size] ÷ [e:degrees of freedom: total sample size − 2])"),
+        ("Effect size (Cohen's d)",
+         r"d = \frac{\ca{\bar{x}_1 - \bar{x}_2}}{\cb{s_p}}",
+         "d = [a:difference between the group means] ÷ [b:pooled standard deviation]"),
+    ],
+    "Paired Samples t-test": [
+        ("Test statistic",
+         r"t = \frac{\ca{\bar{d}}}{\cb{s_d} / \sqrt{\cc{n}}}",
+         "t = [a:average of each person's before-after difference] ÷ ([b:standard deviation of those differences] ÷ √[c:number of pairs])"),
+        ("Effect size (Cohen's d_z)",
+         r"d_z = \frac{\ca{\bar{d}}}{\cb{s_d}}",
+         "d = [a:average difference] ÷ [b:standard deviation of the differences]"),
+    ],
+    "Mann-Whitney U Test": [
+        ("U statistic",
+         r"U_1 = \ca{R_1} - \cb{\frac{n_1(n_1+1)}{2}}",
+         "U = [a:sum of group 1's ranks in the combined data] − [b:smallest rank sum group 1 could possibly have]"),
+        ("Large-sample z",
+         r"z = \frac{U - \cc{\tfrac{n_1 n_2}{2}}}{\cd{\sqrt{\tfrac{n_1 n_2 (n_1 + n_2 + 1)}{12}}}}",
+         "z = (U − [c:U expected if the groups don't differ]) ÷ [d:standard error of U]"),
+    ],
+    "Wilcoxon Signed-Rank Test": [
+        ("W statistic",
+         r"W = \sum_{\ca{d_i > 0}} \cb{R_i}",
+         "W = add up the [b:ranks of the absolute differences] for the [a:pairs whose difference is positive]"),
+        ("Large-sample z",
+         r"z = \frac{W - \cc{\tfrac{n(n+1)}{4}}}{\cd{\sqrt{\tfrac{n(n+1)(2n+1)}{24}}}}",
+         "z = (W − [c:W expected if there is no change]) ÷ [d:standard error of W]"),
+    ],
+    "One-Way ANOVA": [
+        ("F ratio",
+         r"F = \frac{\ca{\sum_j n_j(\bar{x}_j - \bar{x})^2} \,/\, \cb{(k-1)}}{\cc{\sum_j \sum_i (x_{ij} - \bar{x}_j)^2} \,/\, \cd{(N-k)}}",
+         "F = ([a:spread of the group means around the grand mean] ÷ [b:number of groups − 1]) ÷ ([c:spread of scores around their own group's mean] ÷ [d:total sample size − number of groups])"),
+        ("Effect size (eta squared)",
+         r"\eta^2 = \frac{\ca{SS_{between}}}{\ce{SS_{total}}}",
+         "η² = [a:variation explained by group] ÷ [e:total variation in the outcome]"),
+    ],
+    "Repeated Measures ANOVA": [
+        ("F ratio",
+         r"F = \frac{\ca{SS_{conditions}} \,/\, \cb{(k-1)}}{\cc{SS_{error}} \,/\, \cd{(k-1)(n-1)}}",
+         "F = ([a:variation between the condition means] ÷ [b:number of conditions − 1]) ÷ ([c:leftover variation] ÷ [d:its degrees of freedom])"),
+        ("Removing person-to-person differences",
+         r"\cc{SS_{error}} = \ce{SS_{total}} - \ca{SS_{conditions}} - \cf{SS_{subjects}}",
+         "[c:leftover variation] = [e:total variation] − [a:variation from conditions] − [f:variation from people simply differing from each other]"),
+    ],
+    "Factorial ANOVA": [
+        ("Model",
+         r"y_{ijk} = \mu + \ca{\alpha_i} + \cb{\beta_j} + \cc{(\alpha\beta)_{ij}} + \cd{\varepsilon_{ijk}}",
+         "score = overall mean + [a:effect of factor A] + [b:effect of factor B] + [c:extra effect of that particular A-B combination] + [d:random error]"),
+        ("F ratio for each effect",
+         r"F_{effect} = \frac{\ce{MS_{effect}}}{\cd{MS_{error}}}",
+         "F = [e:average variation explained by the effect (A, B or A×B)] ÷ [d:average unexplained variation]"),
+    ],
+    "Mixed / Repeated-Measures Factorial ANOVA": [
+        ("Model",
+         r"y_{ijk} = \mu + \ca{\alpha_i} + \cf{\pi_{k(i)}} + \cb{\beta_j} + \cc{(\alpha\beta)_{ij}} + \cd{\varepsilon_{ijk}}",
+         "score = overall mean + [a:between-groups effect] + [f:that person's own baseline] + [b:within-person (time) effect] + [c:group × time interaction] + [d:random error]"),
+        ("Between-groups F",
+         r"F_{A} = \frac{\ca{MS_{A}}}{\cf{MS_{S(A)}}}",
+         "F = [a:variation between groups] ÷ [f:variation between people within each group]"),
+        ("Within-person F",
+         r"F_{B} = \frac{\cb{MS_{B}}}{\cd{MS_{B \times S(A)}}}",
+         "F = [b:variation between time points or conditions] ÷ [d:how inconsistently people change across them]"),
+    ],
+    "ANCOVA": [
+        ("Model",
+         r"y_{ij} = \mu + \ca{\tau_j} + \cb{\beta}(\cc{x_{ij} - \bar{x}}) + \cd{\varepsilon_{ij}}",
+         "score = overall mean + [a:effect of the group] + [b:slope of the covariate] × [c:how far the person's covariate is from average] + [d:random error]"),
+        ("Adjusted group mean",
+         r"\bar{y}_j^{\,adj} = \bar{y}_j - \cb{b}(\cc{\bar{x}_j - \bar{x}})",
+         "adjusted mean = group's raw mean − [b:covariate slope] × [c:how far the group's average covariate is from the overall average]"),
+        ("F ratio",
+         r"F = \frac{\ca{MS_{groups,\,adj}}}{\cd{MS_{error,\,adj}}}",
+         "F = [a:variation between the adjusted group means] ÷ [d:unexplained variation after removing the covariate]"),
+    ],
+    "Kruskal-Wallis H Test": [
+        ("H statistic",
+         r"H = \cc{\frac{12}{N(N+1)}} \sum_{j} \frac{\ca{R_j}^2}{\cb{n_j}} - \cd{3(N+1)}",
+         "H = [c:scaling for the total sample size] × sum over groups of ([a:group's rank total]² ÷ [b:group size]) − [d:the value that sum gives when groups don't differ]"),
+    ],
+    "Friedman Test": [
+        ("Chi-square statistic",
+         r"\chi^2_F = \cc{\frac{12}{n\,k(k+1)}} \sum_{j} \ca{R_j}^2 - \cd{3n(k+1)}",
+         "χ² = [c:scaling for the number of people and conditions] × sum over conditions of [a:condition's rank total (ranked within each person)]² − [d:the value expected when conditions don't differ]"),
+    ],
+    "Aligned Rank Transform (ART) ANOVA": [
+        ("Align for one effect (here, factor A)",
+         r"y^{\ast}_{ijk} = \cd{(y_{ijk} - \bar{y}_{ij})} + \ca{(\bar{y}_{i\cdot} - \bar{y}_{\cdot\cdot})}",
+         "aligned score = [d:the score's residual from its cell mean] + [a:estimated effect of factor A only]"),
+        ("Rank, then run the ANOVA",
+         r"F_A = \frac{\ca{MS_A}\big(\cb{\mathrm{rank}(y^{\ast})}\big)}{\cd{MS_{error}}\big(\cb{\mathrm{rank}(y^{\ast})}\big)}",
+         "F = [a:variation for factor A] ÷ [d:error variation], both computed on the [b:ranks of the aligned scores]. Repeat the alignment for every effect."),
+    ],
+    "Quade's Nonparametric ANCOVA": [
+        ("Remove the covariate from the ranks",
+         r"\cd{e_{ij}} = \ca{\mathrm{rank}(y_{ij})} - \cb{b}\,\cc{\mathrm{rank}(x_{ij})}",
+         "[d:residual] = [a:rank of the outcome] − [b:slope] × [c:rank of the covariate]"),
+        ("Compare groups on the residuals",
+         r"F = \frac{\ce{\sum_j n_j \bar{e}_j^{\,2}} \,/\, (k-1)}{\cd{\sum_j \sum_i (e_{ij} - \bar{e}_j)^2} \,/\, (N-k)}",
+         "F = [e:spread of the groups' average residuals] ÷ [d:spread of residuals within groups], each divided by its degrees of freedom"),
+    ],
+    "Chi-Square Test of Independence": [
+        ("Chi-square statistic",
+         r"\chi^2 = \sum \frac{(\ca{O} - \cb{E})^2}{\cb{E}}",
+         "χ² = sum over every cell of ([a:observed count] − [b:expected count])² ÷ [b:expected count]"),
+        ("Expected count",
+         r"\cb{E} = \frac{\cc{\text{row total}} \times \cd{\text{column total}}}{\ce{N}}",
+         "[b:expected count] = [c:row total] × [d:column total] ÷ [e:total sample size]"),
+        ("Effect size (Cramér's V)",
+         r"V = \sqrt{\frac{\chi^2}{\ce{N}\,(\min(r, c) - 1)}}",
+         "V = √(χ² ÷ ([e:total sample size] × (the smaller of rows or columns − 1)))"),
+    ],
+    "McNemar's Test": [
+        ("Chi-square statistic",
+         r"\chi^2 = \frac{(\ca{b} - \cb{c})^2}{\ca{b} + \cb{c}}",
+         "χ² = ([a:people who switched yes → no] − [b:people who switched no → yes])² ÷ ([a:yes → no] + [b:no → yes])"),
+    ],
+    "Cochran's Q Test": [
+        ("Q statistic",
+         r"Q = \frac{(k-1)\left[k \sum_j \ca{C_j}^2 - \cc{N}^2\right]}{k\,\cc{N} - \sum_i \cb{R_i}^2}",
+         "Q = (conditions − 1) × (k × sum of [a:'yes' count per condition]² − [c:total 'yes' count]²) ÷ (k × [c:total 'yes' count] − sum of [b:'yes' count per person]²)"),
+    ],
+    "One-Way MANOVA": [
+        ("Wilks' lambda",
+         r"\Lambda = \frac{|\cc{\mathbf{E}}|}{|\ca{\mathbf{H}} + \cc{\mathbf{E}}|}",
+         "Λ = [c:size of the within-group spread across all outcomes] ÷ size of ([a:between-group spread] + [c:within-group spread]). Small Λ means the groups differ."),
+        ("Pillai's trace",
+         r"V = \operatorname{tr}\!\left[\ca{\mathbf{H}}(\ca{\mathbf{H}} + \cc{\mathbf{E}})^{-1}\right]",
+         "V = share of the total spread ([a:between groups] + [c:within groups]) that comes from [a:differences between groups]"),
+    ],
+    "Factorial MANOVA": [
+        ("Model",
+         r"\mathbf{y}_{ijk} = \boldsymbol{\mu} + \ca{\boldsymbol{\alpha}_i} + \cb{\boldsymbol{\beta}_j} + \cd{(\boldsymbol{\alpha\beta})_{ij}} + \cc{\boldsymbol{\varepsilon}_{ijk}}",
+         "outcome vector = means + [a:factor A effect] + [b:factor B effect] + [d:A × B interaction] + [c:random error], with one entry per outcome"),
+        ("Wilks' lambda for each effect",
+         r"\Lambda_{effect} = \frac{|\cc{\mathbf{E}}|}{|\ce{\mathbf{H}_{effect}} + \cc{\mathbf{E}}|}",
+         "Λ = [c:within-cell spread] ÷ ([e:spread explained by A, B or A × B] + [c:within-cell spread])"),
+    ],
+    "MANCOVA": [
+        ("Model",
+         r"\mathbf{y}_{ij} = \boldsymbol{\mu} + \ca{\boldsymbol{\tau}_j} + \cb{\mathbf{B}}(\cd{x_{ij} - \bar{x}}) + \cc{\boldsymbol{\varepsilon}_{ij}}",
+         "outcome vector = means + [a:group effect] + [b:covariate slopes] × [d:distance of the covariate from average] + [c:random error]"),
+        ("Wilks' lambda, adjusted",
+         r"\Lambda = \frac{|\cc{\mathbf{E}_{adj}}|}{|\ca{\mathbf{H}_{adj}} + \cc{\mathbf{E}_{adj}}|}",
+         "Λ = [c:within-group spread after removing the covariate] ÷ ([a:adjusted between-group spread] + [c:adjusted within-group spread])"),
+    ],
+    "PERMANOVA (non-parametric MANOVA)": [
+        ("Pseudo-F",
+         r"F = \frac{\ca{SS_A} \,/\, (a-1)}{\cc{SS_W} \,/\, (N-a)}",
+         "F = [a:spread between groups] ÷ [c:spread within groups], each divided by its degrees of freedom"),
+        ("Spread from distances",
+         r"\cc{SS_W} = \sum_{groups} \frac{1}{n} \sum_{i<j} \cd{d_{ij}}^2, \qquad \ca{SS_A} = \ce{SS_T} - \cc{SS_W}",
+         "[c:within-group spread] = sum of squared [d:distances between pairs in the same group] ÷ group size; [a:between-group spread] = [e:total spread] − [c:within-group spread]"),
+        ("Permutation p-value",
+         r"p = \frac{\cf{\#\{F^{\ast} \ge F\}} + 1}{\cb{\text{permutations}} + 1}",
+         "p = ([f:shuffles that gave an F at least as large] + 1) ÷ ([b:number of shuffles of the group labels] + 1)"),
+    ],
+    "Pearson's r Correlation": [
+        ("Correlation",
+         r"r = \frac{\ca{\sum (x_i - \bar{x})(y_i - \bar{y})}}{\cb{\sqrt{\sum (x_i - \bar{x})^2 \sum (y_i - \bar{y})^2}}}",
+         "r = [a:how much x and y vary together] ÷ [b:how much they vary on their own]"),
+        ("Significance test",
+         r"t = \frac{r\sqrt{\cc{n-2}}}{\sqrt{1 - r^2}}",
+         "t = r × √[c:(sample size − 2)] ÷ √(1 − r²)"),
+    ],
+    "Spearman's Rank Correlation": [
+        ("Rank correlation (no ties)",
+         r"\rho = 1 - \frac{6 \sum \ca{d_i}^2}{\cb{n}(\cb{n}^2 - 1)}",
+         "ρ = 1 − 6 × sum of [a:squared differences between each person's two ranks] ÷ ([b:sample size] × (sample size² − 1))"),
+    ],
+    "Point-Biserial Correlation": [
+        ("Correlation",
+         r"r_{pb} = \frac{\ca{M_1 - M_0}}{\cb{s_n}} \sqrt{\cc{p\,q}}",
+         "r = [a:difference in means between the two categories] ÷ [b:standard deviation of all scores] × √[c:(share in category 1 × share in category 0)]"),
+    ],
+    "Rank-Biserial Correlation": [
+        ("Correlation from U",
+         r"r_{rb} = 1 - \frac{2\,\ca{U}}{\cb{n_1 n_2}}",
+         "r = 1 − 2 × [a:Mann-Whitney U] ÷ [b:number of possible pairs between the groups]"),
+        ("Same thing, read as pairs",
+         r"r_{rb} = \cc{P(\text{group 1 wins})} - \cd{P(\text{group 2 wins})}",
+         "r = [c:share of pairs where the group 1 score is higher] − [d:share where the group 2 score is higher]"),
+    ],
+    "Canonical Correlation Analysis": [
+        ("Canonical variates",
+         r"\ca{U} = \mathbf{a}^\top \mathbf{X}, \qquad \cb{V} = \mathbf{b}^\top \mathbf{Y}",
+         "[a:U is a weighted blend of the first set of variables]; [b:V is a weighted blend of the second set]"),
+        ("Weights chosen to maximize",
+         r"\rho = \operatorname{corr}(\ca{U}, \cb{V}) = \frac{\cc{\mathbf{a}^\top \Sigma_{XY}\, \mathbf{b}}}{\cd{\sqrt{\mathbf{a}^\top \Sigma_{XX}\, \mathbf{a}\;\, \mathbf{b}^\top \Sigma_{YY}\, \mathbf{b}}}}",
+         "ρ = correlation of [a:U] and [b:V] = [c:how the two blends vary together] ÷ [d:how much each blend varies on its own]"),
+    ],
+    "Simple Linear Regression": [
+        ("Prediction line",
+         r"\hat{y} = \cb{b_0} + \ca{b_1}\,\cc{x}",
+         "predicted outcome = [b:intercept] + [a:slope] × [c:predictor]"),
+        ("Slope and intercept",
+         r"\ca{b_1} = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sum (x_i - \bar{x})^2}, \qquad \cb{b_0} = \bar{y} - \ca{b_1}\bar{x}",
+         "[a:slope] = how x and y vary together ÷ how x varies alone; [b:intercept] = mean of y − [a:slope] × mean of x"),
+        ("Variance explained",
+         r"R^2 = 1 - \frac{\cd{SS_{residual}}}{\ce{SS_{total}}}",
+         "R² = 1 − [d:prediction errors squared] ÷ [e:total variation in y]"),
+    ],
+    "Multiple Linear Regression": [
+        ("Prediction equation",
+         r"\hat{y} = \cb{b_0} + \ca{b_1}\cc{x_1} + \ca{b_2}\cc{x_2} + \dots + \ca{b_p}\cc{x_p}",
+         "predicted outcome = [b:intercept] + each [a:slope] × its [c:predictor], each slope holding the others constant"),
+        ("Least-squares coefficients",
+         r"\ca{\mathbf{b}} = (\cc{\mathbf{X}}^\top \cc{\mathbf{X}})^{-1} \cc{\mathbf{X}}^\top \mathbf{y}",
+         "[a:coefficients] = the values that make the squared prediction errors as small as possible, given the [c:predictor matrix]"),
+        ("Variance explained",
+         r"R^2 = 1 - \frac{\cd{SS_{residual}}}{\ce{SS_{total}}}",
+         "R² = 1 − [d:prediction errors squared] ÷ [e:total variation in y]"),
+    ],
+    "Binary Logistic Regression": [
+        ("Log-odds model",
+         r"\ln\!\left(\frac{\cd{p}}{1 - \cd{p}}\right) = \cb{b_0} + \ca{b_1}\cc{x_1} + \dots + \ca{b_k}\cc{x_k}",
+         "log of the odds of [d:yes] = [b:intercept] + each [a:coefficient] × its [c:predictor]"),
+        ("Predicted probability",
+         r"\cd{p} = \frac{1}{1 + e^{-(\cb{b_0} + \ca{b_1}\cc{x_1} + \dots)}}",
+         "[d:probability of yes] = 1 ÷ (1 + e raised to minus ([b:intercept] + each [a:coefficient] × its [c:predictor]))"),
+        ("Odds ratio",
+         r"OR = e^{\ca{b_1}}",
+         "odds ratio = e raised to the [a:coefficient]: how the odds multiply when that predictor goes up by 1"),
+    ],
+    "Ordinal Logistic Regression": [
+        ("Proportional-odds model",
+         r"\ln\!\left(\frac{\cd{P(Y \le j)}}{1 - \cd{P(Y \le j)}}\right) = \cb{\theta_j} - (\ca{b_1}\cc{x_1} + \dots + \ca{b_k}\cc{x_k})",
+         "log odds of [d:being at or below level j] = [b:cut-point for level j] − (each [a:coefficient] × its [c:predictor])"),
+        ("Odds ratio",
+         r"OR = e^{\ca{b_1}}",
+         "odds ratio = e raised to the [a:coefficient]: how the odds of a higher category multiply per 1-unit increase, the same at every cut-point"),
+    ],
+    "Multivariate Multiple Regression": [
+        ("Model",
+         r"\cd{\mathbf{Y}} = \cc{\mathbf{X}}\ca{\mathbf{B}} + \ce{\mathbf{E}}",
+         "[d:outcomes, one column each] = [c:predictors] × [a:coefficients, one column per outcome] + [e:errors]"),
+        ("Coefficients",
+         r"\ca{\hat{\mathbf{B}}} = (\cc{\mathbf{X}}^\top \cc{\mathbf{X}})^{-1} \cc{\mathbf{X}}^\top \cd{\mathbf{Y}}",
+         "[a:coefficients] = the least-squares fit of every [d:outcome] on the [c:predictors] at once; the multivariate tests then use the errors' shared covariance"),
+    ],
+    "Linear Mixed-Effects Model": [
+        ("Model",
+         r"\mathbf{y} = \cc{\mathbf{X}}\ca{\boldsymbol{\beta}} + \cd{\mathbf{Z}}\cb{\mathbf{u}} + \ce{\boldsymbol{\varepsilon}}",
+         "outcome = [c:fixed predictors (group, time, covariate)] × [a:fixed effects] + [d:which person each row belongs to] × [b:random effects] + [e:residual error]"),
+        ("Example: repeated measures with a covariate",
+         r"y_{ti} = \ca{\beta_0} + \ca{\beta_1}\,\text{group}_i + \ca{\beta_2}\,\text{time}_t + \ca{\beta_3}\,\text{baseline}_i + \cb{u_{0i}} + \ce{\varepsilon_{ti}}",
+         "score at time t for person i = [a:fixed intercept and effects of group, time and baseline] + [b:that person's own offset] + [e:error]"),
+        ("Random effects are assumed normal",
+         r"\cb{\mathbf{u}} \sim N(0, \mathbf{G}), \qquad \ce{\boldsymbol{\varepsilon}} \sim N(0, \sigma^2 \mathbf{I})",
+         "[b:person offsets] vary around zero; [e:errors] vary around zero with constant variance"),
+    ],
+    "Hierarchical Linear Model (HLM)": [
+        ("Level 1 (individuals)",
+         r"y_{ij} = \cb{\beta_{0j}} + \cc{\beta_{1j}}\,x_{ij} + \ce{r_{ij}}",
+         "student i's score in school j = [b:that school's intercept] + [c:that school's slope] × predictor + [e:individual error]"),
+        ("Level 2 (groups)",
+         r"\cb{\beta_{0j}} = \ca{\gamma_{00}} + \ca{\gamma_{01}}\,w_j + \cd{u_{0j}}",
+         "[b:school's intercept] = [a:overall intercept and effect of a school-level predictor] + [d:that school's random deviation]"),
+        ("Intraclass correlation",
+         r"ICC = \frac{\cd{\tau_{00}}}{\cd{\tau_{00}} + \ce{\sigma^2}}",
+         "ICC = [d:variance between groups] ÷ ([d:between-group variance] + [e:within-group variance])"),
+    ],
+}
+if set(TEST_EQUATIONS) != {t.name for t in TESTS}:
+    raise ValueError(f"TEST_EQUATIONS and TESTS disagree: {set(TEST_EQUATIONS) ^ {t.name for t in TESTS}}")
+
+
 def requirements(test: Test) -> list[tuple[str, list[str]]]:
     """What a test needs, in question order: (attribute short label, allowed option labels).
 

@@ -130,8 +130,10 @@ def index():
 
 @app.get("/api/catalog")
 def catalog():
-    """Everything the hover cards show for each test."""
+    """Everything the hover cards and the Explore tab show for each test."""
+    family_of = {name: fam for fam, _, names in se.TEST_FAMILIES for name in names}
     return {
+        "families": [{"name": fam, "blurb": blurb, "tests": names} for fam, blurb, names in se.TEST_FAMILIES],
         "tests": [
             {
                 "name": t.name,
@@ -139,6 +141,9 @@ def catalog():
                 "summary": se.TEST_INFO[t.name][0],
                 "example": se.TEST_INFO[t.name][1],
                 "requirements": [{"short": short, "values": values} for short, values in se.requirements(t)],
+                "family": family_of[t.name],
+                "equations": [{"label": label, "math": math, "words": words}
+                              for label, math, words in se.TEST_EQUATIONS[t.name]],
             }
             for t in se.TESTS
         ],
