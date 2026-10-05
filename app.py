@@ -17,7 +17,7 @@ from main import extract_variables_from_text, generate_conversational_response
 # ========================================================
 # 1. PAGE THEME — olive green / cream / charcoal / white
 # ========================================================
-st.set_page_config(page_title="StatTest Matcher", layout="wide")
+st.set_page_config(page_title="Method Matcher", layout="wide")
 
 OLIVE = "#6B7A3A"        # primary accent — active bubbles, headers
 OLIVE_DARK = "#4E5A2A"   # borders / hover on olive elements
@@ -219,7 +219,7 @@ if "answers" not in st.session_state:
     st.session_state.run_counter = 0
     reset_application_state()
 
-st.title("StatTest Matcher")
+st.title("Method Matcher")
 st.caption("Adjust settings on the left panel or use the chat tool below to narrow down your study parameters.")
 
 col_left, col_right = st.columns([1, 3])

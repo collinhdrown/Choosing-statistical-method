@@ -22,7 +22,7 @@ import stat_engine as se
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
-app = FastAPI(title="StatTest Matcher")
+app = FastAPI(title="Method Matcher")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 

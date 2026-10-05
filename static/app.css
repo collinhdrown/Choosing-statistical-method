@@ -171,30 +171,13 @@ kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--li
 .tab:focus-visible, .explore a:focus-visible, .mi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .result .more { color: var(--good); font-weight: 600; font-size: 14px; }
 
-/* ========== Explore: dropdown ========== */
+/* ========== Explore ========== */
 .explore { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; min-width: 0; }
-.picker { position: relative; justify-self: start; z-index: 10; max-width: 100%; }
-.pick { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 15px; background: var(--tile); color: #1D231E; border: 0; border-radius: 10px; box-shadow: inset 0 -3px 0 var(--tile-edge), 0 1px 2px rgba(0,0,0,.16); max-width: 100%; }
-.pick:hover:not(:disabled) { color: #1D231E; box-shadow: inset 0 -3px 0 var(--tile-edge), 0 0 0 2px var(--accent); }
-.pick #picklabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pick .caret { color: #5D665D; font-size: 12px; }
-.menu { position: absolute; top: calc(100% + 6px); left: 0; width: 260px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 14px 34px rgba(0,0,0,.2); }
-.fam { position: relative; }
-.mi { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 14px; color: var(--ink); text-decoration: none; }
-.mi:hover, .mi:focus-visible, .fam.open > .famitem { background: var(--accent-soft); }
-.famitem span:first-child { flex: 1; font-weight: 600; }
-.famitem .n { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.famitem .arrow { color: var(--muted); font-size: 11px; transition: transform 150ms; }
-.flyout { display: none; position: absolute; top: -6px; left: calc(100% + 4px); width: 300px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 14px 34px rgba(0,0,0,.2); }
-.fam.open > .flyout { display: block; animation: pop 200ms ease-out; }
-.flyout .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
-.flyout .overview { color: var(--muted); font-size: 12.5px; font-weight: 600; border-bottom: 1px dashed var(--line); border-radius: 8px 8px 0 0; margin-bottom: 4px; }
-/* Narrow screens: the flyout opens in place under its family instead of to the side. */
-@media (max-width: 640px) {
-  .menu { width: min(320px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
-  .flyout { position: static; width: auto; box-shadow: none; border: 0; border-left: 2px solid var(--accent); border-radius: 0; margin: 2px 0 6px 12px; padding: 2px 0 2px 6px; }
-  .fam.open .arrow { transform: rotate(90deg); }
-}
+.crumbs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 13.5px; color: var(--muted); }
+.crumbs:empty { display: none; }
+.crumbs a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs b { color: var(--ink); font-weight: 600; }
 
 /* ========== Explore: pages ========== */
 .xintro h2, .xtest h2 { font-family: var(--font-display); font-weight: 700; margin: 0; line-height: 1.1; text-wrap: balance; }
@@ -246,3 +229,13 @@ kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--li
 .xtest > *, .eq { min-width: 0; }
 .xtest .band h2 { overflow-wrap: anywhere; }
 @media (max-width: 640px) { .xtest .band h2 { font-size: 26px; } }
+
+/* Word equations drawn like the math: stacked fractions and root bars */
+.eq .words p { line-height: 1.9; }
+.wfrac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; text-align: center; margin: 4px 3px; line-height: 1.35; }
+.wfrac > .top { padding: 0 4px 3px; }
+.wfrac > .bottom { padding: 3px 4px 0; border-top: 1.5px solid currentColor; }
+.wsqrt { display: inline-flex; align-items: stretch; vertical-align: middle; }
+.wsqrt > .rad { font-size: 1.2em; line-height: 1; align-self: flex-end; }
+.wsqrt > .under { border-top: 1.5px solid currentColor; padding: 2px 3px 0; }
+.words .wfrac [class^="eq-"], .words .wsqrt [class^="eq-"] { border-bottom-width: 0; }
