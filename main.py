@@ -55,14 +55,16 @@ def extract_variables_from_text(conversation_history: str, current_state: dict) 
 
 
 def generate_conversational_response(missing_key: str, current_state: dict) -> str:
-    """Turn the next unanswered stat_engine.Attribute into a natural, two-sentence question."""
+    """Turn the next unanswered stat_engine.Attribute into one short, natural question.
+
+    Examples stay out of the question: the web page shows the attribute's hint behind a "?"
+    icon, and the CLI prints it when the user types "?".
+    """
     info = se.question_for(missing_key)
     prompt = (
-        "Ask the user this exact question in a natural, professional way, immediately followed "
-        "by the example given below. Exactly 2 sentences total. No greetings, no extra commentary, "
-        "and don't mention internal field names.\n\n"
-        f"QUESTION: {info['question']}\n"
-        f"EXAMPLE: {info['hint'] or 'Give a brief, concrete example if it helps.'}"
+        "Ask the user this exact question in a natural, professional way, in one short sentence. "
+        "Don't add examples, greetings or extra commentary, and don't mention internal field names.\n\n"
+        f"QUESTION: {info['question']}"
     )
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -78,17 +80,21 @@ def run_consultation():
     print("====================================================")
     print("🎓 SAGE STATS ADVISOR: INITIALIZED")
     print("Describe your research project, variables, or data setup below.")
-    print("Type 'exit' to quit at any point.")
+    print("Type '?' for more about the current question, or 'exit' to quit at any point.")
     print("====================================================\n")
 
     state: dict = {}
     transcript = ""
+    help_text = ""
 
     while True:
         user_input = input("You: ")
         if user_input.strip().lower() == "exit":
             print("\nGoodbye!")
             break
+        if user_input.strip() == "?":
+            print(f"\n{help_text or 'Describe your study and I will ask about anything I still need.'}\n")
+            continue
 
         transcript += f"\nUser: {user_input}"
         print("\n[Analyzing data properties...]")
@@ -123,7 +129,8 @@ def run_consultation():
 
         # result["status"] == "incomplete"
         ai_question = generate_conversational_response(result["ask_for"], canon_state)
-        print(f"\nAdvisor: {ai_question}\n")
+        help_text = se.ATTR[result["ask_for"]].hint
+        print(f"\nAdvisor: {ai_question}" + (" (type ? for more)" if help_text else "") + "\n")
         transcript += f"\nAdvisor: {ai_question}"
 
 

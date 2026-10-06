@@ -87,7 +87,29 @@ header.top { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: f
 /* Question */
 .q { display: grid; gap: 14px; }
 .q h2 { font-family: var(--font-display); font-weight: 700; font-size: 23px; line-height: 1.2; margin: 0; text-wrap: balance; }
-.q .hint { color: var(--muted); font-size: 13px; margin: -6px 0 0; }
+.q { position: relative; }
+.q:has(> .help) h2 { padding-right: 32px; }
+
+/* "?" help on a question: the examples stay hidden until asked for, then open in place */
+.help summary {
+  list-style: none; cursor: pointer; display: grid; place-items: center;
+  width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
+  color: var(--muted); font-size: 13px; font-weight: 700; line-height: 1; user-select: none;
+}
+.help summary::-webkit-details-marker { display: none; }
+.help summary:hover, .help[open] summary { border-color: var(--accent); color: var(--accent); }
+.help summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.help p {
+  margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  color: var(--ink); font-size: 13px; line-height: 1.45;
+}
+.q > .help { margin-top: -6px; }
+.q > .help:not([open]) { margin-top: -14px; }
+.q > .help summary { position: absolute; top: 44px; right: 18px; }
+/* Inside a chat bubble the "?" sits after the text and opens in place (the transcript scrolls, so no popover). */
+.msg .help { display: inline; }
+.msg .help summary { display: inline-grid; width: 18px; height: 18px; margin: 0 0 0 6px; font-size: 11px; vertical-align: 1px; }
+.msg .help p { margin-top: 8px; background: var(--panel); }
 .opts { display: grid; gap: 10px; }
 .opt {
   display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 12px;

@@ -26,7 +26,8 @@ class Attribute:
     short: str                 # label used in diagrams
     question: str              # asked to the user
     options: dict              # value -> human label (ordered)
-    hint: str = ""             # examples shown under the question
+    hint: str = ""             # examples shown behind the question's "?" help icon
+    infer: str = ""            # extra guidance for the LLM on when the answer is already implied
 
 
 ATTRIBUTES: list[Attribute] = [
@@ -56,9 +57,22 @@ ATTRIBUTES: list[Attribute] = [
         "repeated": "Repeated / matched (same people measured again)"}),
     Attribute("covariates", "Covariates", "Do you need to control for continuous covariates (e.g. baseline score)?", {
         "no": "No", "yes": "Yes"}),
-    Attribute("nested", "Nesting", "Is your data nested or clustered?", {
+    Attribute("nested", "Nesting", "Is your data nested?", {
         "no": "No", "yes": "Yes"},
-        hint="e.g. students within schools, patients within clinics, repeated rows per person in a multilevel design."),
+        hint="Nested means observations share a higher-level unit, so they aren't independent of each other: "
+             "students within schools, patients within clinics, or several rows per person in a multilevel "
+             "design. If every row is a separate, unrelated individual measured once, it isn't nested.",
+        infer="Decide this by reasoning about the data's structure, not by matching keywords. First work out the "
+              "unit of observation (what one row of data is). Nesting means those rows are gathered inside "
+              "higher-level units, so rows from the same unit are more alike than rows from different units. "
+              "Answer 'no' when the description gives no reason to think the rows share such a unit: the units "
+              "were sampled independently of each other, each contributes one row, and nothing mentions "
+              "collecting them by cluster or site. A category that is itself a predictor or the comparison of "
+              "interest is a variable, not a cluster. Measuring the same units under each condition is answered "
+              "by the repeated/matched question, not here. Answer 'yes' when the user says or clearly implies "
+              "that rows were collected within shared units or that each unit contributes several rows to a "
+              "multilevel analysis. Leave it null only when the structure is genuinely unclear, for example a "
+              "possible clustered sample or several rows per unit that the description neither confirms nor rules out."),
     Attribute("normal", "Normality", "Is your outcome approximately normally distributed?", {
         "yes": "Yes (parametric)", "no": "No (non-parametric)"},
         hint="Check with Shapiro-Wilk, a histogram, or a Q-Q plot."),
@@ -720,6 +734,8 @@ def extraction_prompt(current_state: dict) -> str:
              "Standard metrics such as GPA, test scores, IQ, height, weight, age, income are continuous.", ""]
     for a in ATTRIBUTES:
         lines.append(f"- {a.key}: {a.question}  Allowed: " + "; ".join(f"{v} = {lbl}" for v, lbl in a.options.items()))
+        if a.infer:
+            lines.append(f"    {a.infer}")
     lines.append(f"\nAlready known: {_answered(current_state)}")
     return "\n".join(lines)
 

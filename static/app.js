@@ -135,11 +135,14 @@ function renderPath() {
     : `<span class="empty">Nothing yet. Pick an answer below or describe your study.</span>`;
 }
 
+// A "?" the user can open for the examples behind a question, instead of showing them every time.
+const helpTip = text => `<details class="help"><summary title="What does this mean?" aria-label="What does this mean?">?</summary><p>${esc(text)}</p></details>`;
+
 function questionCard(q) {
   return `<div class="card q">
     <span class="label">${esc(q.short)}</span>
     <h2>${esc(q.question)}</h2>
-    ${q.hint ? `<p class="hint">${esc(q.hint)}</p>` : ""}
+    ${q.hint ? helpTip(q.hint) : ""}
     <div class="opts">${q.options.map((o, i) => {
       return `<button class="opt ${o.remaining.length ? "" : "dead"}" style="--i:${i}" data-i="${i}" type="button">
         <span class="key">${i + 1}</span><span class="t">${esc(o.label)}</span></button>`;
@@ -188,6 +191,7 @@ function renderTranscript() {
     const el = document.createElement("div");
     el.className = `msg ${m.role}${m.pending ? " pending" : ""}`;
     el.textContent = m.content;
+    if (m.help) el.insertAdjacentHTML("beforeend", helpTip(m.help));
     return el;
   }));
   box.scrollTop = box.scrollHeight;
@@ -219,10 +223,11 @@ async function send(message) {
   renderTranscript();
   $("send").disabled = true;
   try {
-    const history = transcript.filter(m => !m.pending && m.role !== "error").slice(0, -1);
+    const history = transcript.filter(m => !m.pending && m.role !== "error").slice(0, -1)
+      .map(({ role, content }) => ({ role, content }));
     const res = await api("/api/chat", { message, transcript: history, answers });
     transcript.pop();
-    transcript.push({ role: "assistant", content: res.reply });
+    transcript.push({ role: "assistant", content: res.reply, help: res.help });
     res.from_text.forEach(k => fromText.add(k));
     answers = res.answers;
     view = res.view;
