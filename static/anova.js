@@ -209,7 +209,7 @@ function makeStage(el, { w = 760, h = 300, ymax = 100, unit = "cm", label = "Hop
         st.animals.set(a.id, s);
       }
       if (s.shape !== a.shape + a.color) { s.node.innerHTML = SHAPES[a.shape](a.color); s.shape = a.shape + a.color; }
-      Object.assign(s, { x: px(a.x), target: a.value, size: a.size || 1, period: a.period || 1.4 });
+      Object.assign(s, { x: px(a.x), target: a.value, size: a.size || 1, period: a.period || 2.2 });
       s.mark.setAttribute("stroke", a.color);
       if (reduced) s.cur = a.value;
     });
@@ -334,7 +334,7 @@ const SCENES = [
     after: "Some frogs hop higher than others, and we want to know why. If we can measure something about each frog, like its color, we can ask whether it explains part of that spread.",
     takeaway: "Variance is how spread out the hops are around the average, not how high the average is.",
     mount(el) {
-      const n = 14, z = standardized(11, n), xs = groupSlots([n])[0];
+      const n = 5, z = standardized(11, n), xs = groupSlots([n])[0];
       const st = makeStage(el.querySelector(".stagewrap"));
       const draw = () => {
         const s = val(el, "s1-sd"), ys = z.map(v => 50 + s * v);
@@ -446,21 +446,21 @@ const SCENES = [
     },
   },
   {
-    slug: "ancova", title: "ANCOVA: accounting for body length", blurb: "Bigger frogs hop higher. Does color still matter once size is accounted for?",
+    slug: "ancova", title: "ANCOVA: accounting for body size", blurb: "Bigger frogs hop higher. Does color still matter once size is accounted for?",
     intro: [
-      "Back to frogs only. Bigger frogs tend to hop higher, and body length is a continuous measure, not a group. ANCOVA lets us test whether color still matters after accounting for body length. The continuous variable we account for is called a covariate.",
+      "Back to frogs only. Bigger frogs tend to hop higher, and body size is a continuous measure, not a group. ANCOVA lets us test whether color still matters after accounting for body size. The continuous variable we account for is called a covariate.",
       "In this sample, the yellow frogs look like the best jumpers, but they also happen to be the biggest.",
     ],
-    controls: () => `<div class="switches">${toggle("s5-adj", "Account for body length", false)}</div>`,
-    extra: `<div class="card chartcard"><span class="label">Body length vs hop height</span><div id="s5-plot"></div>
-      <p class="note">One line per color, all with the same slope. ANCOVA compares the colors where the lines cross the dashed average body length.</p></div>`,
-    after: "When you account for body length, each frog's hop is adjusted to what it would be at the average body length, and most of the color difference disappears. ANCOVA assumes the lines for each color are roughly parallel, meaning body length affects hopping the same way for every color.",
+    controls: () => `<div class="switches">${toggle("s5-adj", "Account for body size", false)}</div>`,
+    extra: `<div class="card chartcard"><span class="label">Body size vs hop height</span><div id="s5-plot"></div>
+      <p class="note">One line per color, all with the same slope. ANCOVA compares the colors where the lines cross the dashed average body size.</p></div>`,
+    after: "When you account for body size, each frog's hop is adjusted to what it would be at the average body size, and the color difference disappears. ANCOVA assumes the lines for each color are roughly parallel, meaning body size affects hopping the same way for every color.",
     takeaway: "ANCOVA compares group means as if every group had the same value of the covariate.",
     mount(el) {
-      const n = 6, LEN = [6, 6.4, 7.8], coEff = [0, 1, 1.5];
+      const n = 5, SIZE = [5, 6, 8], coEff = [0, 1, 1.5];
       const groups = [0, 1, 2].map(g => {
         const zx = standardized(51 + g, n), zy = standardized(61 + g, n);
-        return zx.map((v, i) => { const x = LEN[g] + 0.7 * v; return { x, y: 8 + 6 * x + coEff[g] + 3 * zy[i] }; });
+        return zx.map((v, i) => { const x = SIZE[g] + 0.6 * v; return { x, y: 8 + 6 * x + coEff[g] + 3 * zy[i] }; });
       });
       const a = ancova(groups), before = oneWay(groups.map(g => g.map(d => d.y)));
       const slots = groupSlots([n, n, n]);
@@ -469,18 +469,18 @@ const SCENES = [
       const xdom = [4, 10], ydom = [20, 80];
       scatter(el.querySelector("#s5-plot"), {
         pts: groups.flatMap((g, i) => g.map(d => ({ ...d, color: COLORS[i].hex }))), xdom, ydom,
-        xlab: "Body length (cm)", ylab: "Hop height (cm)", xn: 6, yn: 6,
+        xlab: "Body size (cm)", ylab: "Hop height (cm)", xn: 6, yn: 6,
         lines: [...a.groupMeans.map((m, i) => ({ x0: xdom[0], x1: xdom[1], y0: m.y + a.slope * (xdom[0] - m.x), y1: m.y + a.slope * (xdom[1] - m.x), color: COLORS[i].hex })),
           { x0: a.xbar, x1: a.xbar, y0: ydom[0], y1: ydom[1], color: "var(--muted)", dash: true }],
       });
       const draw = () => {
         const adj = isOn(el, "s5-adj");
         st.set(groups.flatMap((g, gi) => g.map((d, i) => ({ id: `${gi}-${i}`, x: slots[gi][i], value: adj ? a.adjust(d) : d.y,
-          shape: "frog", color: COLORS[gi].hex, size: 0.3 + 0.1 * d.x }))));
+          shape: "frog", color: COLORS[gi].hex, size: 0.2 * d.x - 0.15 }))));
         st.lines(groups.map((g, gi) => ({ x0: slots[gi][0] - 0.03, x1: slots[gi][n - 1] + 0.03,
           value: adj ? a.adjMeans[gi] : a.groupMeans[gi].y, color: COLORS[gi].hex })));
         el.querySelector(".readout").innerHTML = `<table class="atable"><thead><tr><th>Color effect</th><th>F</th><th>p</th><th></th></tr></thead><tbody>
-          <tr class="${adj ? "dim" : ""}"><th>Ignoring body length</th><td>${fmtF(before.F)}</td><td>${fmtP(before.p)}</td><td>${verdict(before.p)}</td></tr>
+          <tr class="${adj ? "dim" : ""}"><th>Ignoring body size</th><td>${fmtF(before.F)}</td><td>${fmtP(before.p)}</td><td>${verdict(before.p)}</td></tr>
           <tr class="${adj ? "" : "dim"}"><th>After accounting for it</th><td>${fmtF(a.F)}</td><td>${fmtP(a.p)}</td><td>${verdict(a.p)}</td></tr></tbody></table>`;
       };
       onSwitch(el, "s5-adj", draw); draw();
@@ -498,8 +498,8 @@ const SCENES = [
     after: "Here the colors overlap a lot on height alone and on frequency alone, so the two separate ANOVAs struggle. But on the scatter plot the groups separate clearly, because yellow frogs jump higher than you'd expect for how often they jump. MANOVA picks that up. Lower the relationship slider and the advantage shrinks.",
     takeaway: "MANOVA is for several related outcomes measured on the same subjects, tested together in one go.",
     mount(el) {
-      const n = 8, SH = 8, SF = 6, slots = groupSlots([n, n, n]), dir = [-1, 0, 1];
-      const z = [0, 1, 2].map(g => [standardized(71 + g, n), standardized(81 + g, n)]);
+      const n = 5, SH = 8, SF = 6, slots = groupSlots([n, n, n]), dir = [-1, 0, 1];
+      const z = [0, 1, 2].map(g => [standardized(171 + g, n), standardized(181 + g, n)]);
       const st = makeStage(el.querySelector(".stagewrap"));
       st.labels(COLORS.map((c, g) => ({ x: mean(slots[g]), text: c.name, color: c.hex })));
       const draw = () => {
@@ -507,11 +507,11 @@ const SCENES = [
         out(el, "s6-r", r.toFixed(2)); out(el, "s6-c", pct(c));
         const groups = z.map(([z1, z2], g) => z1.map((u, i) => {
           const v = r * u + Math.sqrt(1 - r * r) * z2[i];
-          return [50 + SH * (u + 0.6 * c * dir[g]), 40 + SF * (v - 0.6 * c * dir[g])];
+          return [50 + SH * (u + c * dir[g]), 40 + SF * (v - c * dir[g])];
         }));
         const m = manova2(groups), aH = oneWay(groups.map(g => g.map(d => d[0]))), aF = oneWay(groups.map(g => g.map(d => d[1])));
         st.set(groups.flatMap((g, gi) => g.map((d, i) => ({ id: `${gi}-${i}`, x: slots[gi][i], value: d[0],
-          shape: "frog", color: COLORS[gi].hex, period: 50 / Math.max(15, d[1]) }))));
+          shape: "frog", color: COLORS[gi].hex, period: 90 / Math.max(15, d[1]) }))));
         st.lines(groups.map((g, gi) => ({ x0: slots[gi][0] - 0.03, x1: slots[gi][n - 1] + 0.03, value: mean(g.map(d => d[0])), color: COLORS[gi].hex })));
         const ell = (pts, color) => {
           const mx = mean(pts.map(d => d[1])), my = mean(pts.map(d => d[0]));
