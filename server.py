@@ -162,6 +162,19 @@ def quizzes():
     return quiz_bank.quizzes()
 
 
+@app.on_event("startup")
+def _warm_advisor():
+    """Load main.py (and the openai package) while the server boots, not on the first chat.
+
+    On a small host such as Render's free tier that import takes several seconds, which
+    otherwise lands on whoever sends the first message after each restart or spin-down.
+    """
+    try:
+        import main  # noqa: F401
+    except SystemExit:
+        pass  # no key: _advisor() reports it when the chat is used
+
+
 def _advisor():
     """Import main.py's OpenAI helpers on first use.
 
