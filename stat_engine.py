@@ -62,13 +62,17 @@ ATTRIBUTES: list[Attribute] = [
         hint="Nested means observations share a higher-level unit, so they aren't independent of each other: "
              "students within schools, patients within clinics, or several rows per person in a multilevel "
              "design. If every row is a separate, unrelated individual measured once, it isn't nested.",
-        infer="Answer 'no' when the description makes each observation a separate, unrelated unit measured once "
-              "with no shared grouping: e.g. predicting one animal's or person's value from population or "
-              "reference data for its breed or group, a single random sample of people each measured once, "
-              "or published summary data. Answer 'yes' only when observations are grouped inside higher-level "
-              "units (classrooms, schools, clinics, litters, sites, families) or several rows come from the same "
-              "unit in a multilevel design. A plain two-condition before/after or matched design is handled by "
-              "the repeated/matched question, not by nesting. If the grouping structure is unclear, leave it null."),
+        infer="Decide this by reasoning about the data's structure, not by matching keywords. First work out the "
+              "unit of observation (what one row of data is). Nesting means those rows are gathered inside "
+              "higher-level units, so rows from the same unit are more alike than rows from different units. "
+              "Answer 'no' when the description gives no reason to think the rows share such a unit: the units "
+              "were sampled independently of each other, each contributes one row, and nothing mentions "
+              "collecting them by cluster or site. A category that is itself a predictor or the comparison of "
+              "interest is a variable, not a cluster. Measuring the same units under each condition is answered "
+              "by the repeated/matched question, not here. Answer 'yes' when the user says or clearly implies "
+              "that rows were collected within shared units or that each unit contributes several rows to a "
+              "multilevel analysis. Leave it null only when the structure is genuinely unclear, for example a "
+              "possible clustered sample or several rows per unit that the description neither confirms nor rules out."),
     Attribute("normal", "Normality", "Is your outcome approximately normally distributed?", {
         "yes": "Yes (parametric)", "no": "No (non-parametric)"},
         hint="Check with Shapiro-Wilk, a histogram, or a Q-Q plot."),
