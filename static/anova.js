@@ -418,10 +418,11 @@ const SCENES = [
     after: "With the interaction on, blue frogs hop highest of the frogs, but blue rabbits hop lowest of the rabbits. You can't say what blue does without saying which species. Note that an interaction is not the same as species and color being related (say, most grasshoppers being green); that would be the predictors being correlated, which is a different issue.",
     takeaway: "Main effects are about each predictor on its own; an interaction means one predictor's effect changes depending on the other.",
     mount(el) {
-      const n = 4, SP = ["frog", "rabbit", "grasshopper"], SPN = ["Frogs", "Rabbits", "Grasshoppers"];
+      const n = 2, SP = ["frog", "rabbit", "grasshopper"], SPN = ["Frogs", "Rabbits", "Grasshoppers"];
       const spEff = [0, 14, -14], coEff = [-7, 2, 5], ix = [[-5, 10, -5], [5, -10, 5], [0, 0, 0]];
       const z = SP.map((_, a) => [0, 1, 2].map(b => standardized(41 + a * 3 + b, n)));
-      const slots = groupSlots(Array(9).fill(n), 0.9);
+      // Species sit apart; within a species the three colors stand side by side.
+      const slots = groupSlots([3 * n, 3 * n, 3 * n], 2).flatMap(xs => [0, 1, 2].map(b => xs.slice(b * n, (b + 1) * n)));
       const st = makeStage(el.querySelector(".stagewrap"), { h: 320 });
       st.labels(SPN.map((t, a) => ({ x: mean(slots[a * 3 + 1]), text: t })));
       const draw = () => {
@@ -430,10 +431,10 @@ const SCENES = [
           50 + on("s4-sp") * spEff[a] + on("s4-co") * coEff[b] + on("s4-ix") * ix[a][b] + 5 * v)));
         const r = twoWay(cells);
         st.set(cells.flatMap((row, a) => row.flatMap((ys, b) => ys.map((y, i) => ({
-          id: `${a}-${b}-${i}`, x: slots[a * 3 + b][i], value: y, shape: SP[a], color: COLORS[b].hex, size: 0.8 })))));
+          id: `${a}-${b}-${i}`, x: slots[a * 3 + b][i], value: y, shape: SP[a], color: COLORS[b].hex, period: 2.2 })))));
         st.lines(cells.flatMap((row, a) => row.map((ys, b) => {
           const s = slots[a * 3 + b];
-          return { x0: s[0] - 0.012, x1: s[n - 1] + 0.012, value: mean(ys), color: COLORS[b].hex };
+          return { x0: s[0] - 0.02, x1: s[n - 1] + 0.02, value: mean(ys), color: COLORS[b].hex };
         })));
         interactionPlot(el.querySelector("#s4-plot"), r.cellMeans, SPN);
         const row = (name, x) => `<tr><th>${name}</th><td>${fmtF(x.F)}</td><td>${fmtP(x.p)}</td><td>${verdict(x.p)}</td></tr>`;
