@@ -7,7 +7,7 @@
  *   #explore                 all families
  *   #explore/family/<slug>   one family
  *   #explore/<slug>          one test
- * The Quiz yourself tab (#quiz...) is drawn by quiz.js and the ANOVA lab (#anova...) by anova.js;
+ * The Quiz yourself tab (#quiz...) is drawn by quiz.js and the ANOVA Frogs (#anova...) by anova.js;
  * route() hands them off.
  */
 const famBySlug = {}, testBySlug = {};
