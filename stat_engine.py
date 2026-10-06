@@ -26,7 +26,8 @@ class Attribute:
     short: str                 # label used in diagrams
     question: str              # asked to the user
     options: dict              # value -> human label (ordered)
-    hint: str = ""             # examples shown under the question
+    hint: str = ""             # examples shown behind the question's "?" help icon
+    infer: str = ""            # extra guidance for the LLM on when the answer is already implied
 
 
 ATTRIBUTES: list[Attribute] = [
@@ -56,9 +57,18 @@ ATTRIBUTES: list[Attribute] = [
         "repeated": "Repeated / matched (same people measured again)"}),
     Attribute("covariates", "Covariates", "Do you need to control for continuous covariates (e.g. baseline score)?", {
         "no": "No", "yes": "Yes"}),
-    Attribute("nested", "Nesting", "Is your data nested or clustered?", {
+    Attribute("nested", "Nesting", "Is your data nested?", {
         "no": "No", "yes": "Yes"},
-        hint="e.g. students within schools, patients within clinics, repeated rows per person in a multilevel design."),
+        hint="Nested means observations share a higher-level unit, so they aren't independent of each other: "
+             "students within schools, patients within clinics, or several rows per person in a multilevel "
+             "design. If every row is a separate, unrelated individual measured once, it isn't nested.",
+        infer="Answer 'no' when the description makes each observation a separate, unrelated unit measured once "
+              "with no shared grouping: e.g. predicting one animal's or person's value from population or "
+              "reference data for its breed or group, a single random sample of people each measured once, "
+              "or published summary data. Answer 'yes' only when observations are grouped inside higher-level "
+              "units (classrooms, schools, clinics, litters, sites, families) or several rows come from the same "
+              "unit in a multilevel design. A plain two-condition before/after or matched design is handled by "
+              "the repeated/matched question, not by nesting. If the grouping structure is unclear, leave it null."),
     Attribute("normal", "Normality", "Is your outcome approximately normally distributed?", {
         "yes": "Yes (parametric)", "no": "No (non-parametric)"},
         hint="Check with Shapiro-Wilk, a histogram, or a Q-Q plot."),
@@ -720,6 +730,8 @@ def extraction_prompt(current_state: dict) -> str:
              "Standard metrics such as GPA, test scores, IQ, height, weight, age, income are continuous.", ""]
     for a in ATTRIBUTES:
         lines.append(f"- {a.key}: {a.question}  Allowed: " + "; ".join(f"{v} = {lbl}" for v, lbl in a.options.items()))
+        if a.infer:
+            lines.append(f"    {a.infer}")
     lines.append(f"\nAlready known: {_answered(current_state)}")
     return "\n".join(lines)
 

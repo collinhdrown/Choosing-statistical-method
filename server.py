@@ -192,6 +192,7 @@ def chat(req: ChatRequest):
     view = build_view(answers)
     result = view["result"]
 
+    help_text = None
     if result["status"] == "complete":
         note = f" ({result['note']})" if result.get("note") else ""
         reply = f"Based on what you've told me, I'd recommend the {result['test']}{note}."
@@ -202,9 +203,11 @@ def chat(req: ChatRequest):
         reply = f"That narrows it down to {', '.join(result['tests'])}. Can you tell me more?"
     else:
         reply = advisor.generate_conversational_response(result["ask_for"], view["answers"])
+        help_text = se.ATTR[result["ask_for"]].hint or None
 
     return {
         "reply": reply,
+        "help": help_text,      # shown behind a "?" icon on the reply
         "answers": answers,
         "from_text": [k for k, v in answers.items() if req.answers.get(k) != v],
         "view": view,
