@@ -198,18 +198,18 @@ function makeStage(el, { w = 760, h = 300, ymax = 100, unit = "cm", label = "Hop
 
   st.set = list => {
     const seen = new Set();
-    list.forEach((a, i) => {
+    list.forEach(a => {
       seen.add(a.id);
       let s = st.animals.get(a.id);
       if (!s) {
         const node = document.createElementNS("http://www.w3.org/2000/svg", "g");
         const mark = document.createElementNS("http://www.w3.org/2000/svg", "line");
         g("animals").appendChild(node); g("marks").appendChild(mark);
-        s = { node, mark, cur: a.value, phase: (i * 0.618) % 1 };
+        s = { node, mark, cur: a.value };
         st.animals.set(a.id, s);
       }
       if (s.shape !== a.shape + a.color) { s.node.innerHTML = SHAPES[a.shape](a.color); s.shape = a.shape + a.color; }
-      Object.assign(s, { x: px(a.x), target: a.value, size: a.size || 1, period: a.period || 1.15 });
+      Object.assign(s, { x: px(a.x), target: a.value, size: a.size || 1, period: a.period || 1.4 });
       s.mark.setAttribute("stroke", a.color);
       if (reduced) s.cur = a.value;
     });
@@ -237,7 +237,8 @@ function makeStage(el, { w = 760, h = 300, ymax = 100, unit = "cm", label = "Hop
     for (const s of st.animals.values()) {
       if (!reduced) s.cur += (s.target - s.cur) * 0.14;
       const peak = ground - py(s.cur);
-      const lift = reduced ? 1 : Math.sin(Math.PI * ((t / s.period + s.phase) % 1));
+      // Every animal takes off together and hangs briefly at the top, so the heights line up for comparison.
+      const lift = reduced ? 1 : Math.min(1, 1.25 * Math.sin(Math.PI * ((t / s.period) % 1)));
       s.node.setAttribute("transform", `translate(${s.x} ${ground - peak * lift}) scale(${s.size})`);
       const y = py(s.cur);
       s.mark.setAttribute("x1", s.x - 9); s.mark.setAttribute("x2", s.x + 9);
