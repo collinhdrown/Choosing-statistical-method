@@ -7,7 +7,8 @@
  *   #explore                 all families
  *   #explore/family/<slug>   one family
  *   #explore/<slug>          one test
- * The Quiz yourself tab (#quiz...) is drawn by quiz.js; route() hands it off.
+ * The Quiz yourself tab (#quiz...) is drawn by quiz.js and the ANOVA lab (#anova...) by anova.js;
+ * route() hands them off.
  */
 const famBySlug = {}, testBySlug = {};
 
@@ -115,15 +116,17 @@ const TAGLINES = {
   match: "Answer one question at a time, or describe your study in words. Every answer knocks out the tests that no longer fit.",
   explore: "Browse every test in the catalog: what it is for, when it applies, and the math behind it.",
   quiz: "Practice spotting scales, variables and the right method, then check what you missed.",
+  anova: "See what variance is and how the ANOVA family works, with animals you can make hop.",
 };
 
 function route() {
   const h = decodeURIComponent(location.hash.slice(1));
-  const tab = ["explore", "quiz"].find(t => h === t || h.startsWith(t + "/")) || "match";
+  const tab = ["explore", "quiz", "anova"].find(t => h === t || h.startsWith(t + "/")) || "match";
   const explore = tab === "explore";
   $("view-match").hidden = tab !== "match";
   $("view-explore").hidden = tab !== "explore";
   $("view-quiz").hidden = tab !== "quiz";
+  $("view-anova").hidden = tab !== "anova";
   $("stat").hidden = tab !== "match";
   $("tagline").textContent = TAGLINES[tab];
   for (const a of document.querySelectorAll(".tab")) {
@@ -133,6 +136,7 @@ function route() {
   }
   hideCard();
   if (tab === "quiz") { quizRoute(h.slice("quiz/".length)); scrollTo({ top: 0, behavior: "instant" }); return; }
+  if (tab === "anova") { anovaRoute(h.slice("anova/".length)); scrollTo({ top: 0, behavior: "instant" }); return; }
   if (!explore) { if (view) render(); return; }   // the bubble labels need a visible field to measure
 
   const rest = h.slice("explore/".length);
