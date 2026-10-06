@@ -1,5 +1,5 @@
 /*
- * anova.js — the ANOVA lab tab: a guided walk through the ANOVA family with hopping animals.
+ * anova.js — the ANOVA Frogs tab: a guided walk through the ANOVA family with hopping animals.
  *
  * Everything here runs in the browser: each scene builds a small made-up data set from a fixed
  * seed, runs the matching test on it, and redraws the animals as the controls move. Each animal
@@ -539,8 +539,8 @@ const SCENES = [
 
 /* ========== pages ========== */
 function anovaListPage() {
-  return `<div class="xintro"><h2>ANOVA lab</h2>
-      <p>A guided walk through the ANOVA family with hopping animals. Each scene has one thing to play with; move the controls and watch the test result change.</p></div>
+  return `<div class="xintro"><h2>ANOVA Frogs</h2>
+      <p>A guided walk through the ANOVA family with hopping animals.</p></div>
     <ol class="quizgrid scenegrid">${SCENES.map((s, i) => `
       <li><a class="card quizcard" href="#anova/${s.slug}">
         <span class="label">Scene ${i + 1}</span>
