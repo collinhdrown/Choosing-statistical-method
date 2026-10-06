@@ -23,8 +23,20 @@ import stat_engine as se
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
+# Browsers revalidate the page and its files on every load (a cheap 304 when nothing changed),
+# so a deploy never pairs a new index.html with stale scripts from the cache.
+NO_CACHE = {"Cache-Control": "no-cache"}
+
+
+class FreshStaticFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers.update(NO_CACHE)
+        return response
+
+
 app = FastAPI(title="Method Matcher")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", FreshStaticFiles(directory=STATIC_DIR), name="static")
 
 
 # ========================================================
@@ -126,7 +138,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 def index():
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"), headers=NO_CACHE)
 
 
 @app.get("/api/catalog")
