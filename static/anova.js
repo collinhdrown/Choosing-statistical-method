@@ -334,7 +334,8 @@ const SCENES = [
     after: "Some frogs hop higher than others, and we want to know why. If we can measure something about each frog, like its color, we can ask whether it explains part of that spread.",
     takeaway: "Variance is how spread out the hops are around the average, not how high the average is.",
     mount(el) {
-      const n = 5, z = standardized(11, n), xs = groupSlots([n])[0];
+      // Fixed offsets (mean 0, SD 1) with none near zero, so every frog visibly leaves the mean line as spread grows.
+      const raw = [1, -2, 0.6, -1.2, 1.6], n = raw.length, z = raw.map(v => v / sd(raw)), xs = groupSlots([n])[0];
       const st = makeStage(el.querySelector(".stagewrap"));
       const draw = () => {
         const s = val(el, "s1-sd"), ys = z.map(v => 50 + s * v);
@@ -448,7 +449,7 @@ const SCENES = [
   {
     slug: "ancova", title: "ANCOVA: accounting for body size", blurb: "Bigger frogs hop higher. Does color still matter once size is accounted for?",
     intro: [
-      "Back to frogs only. Bigger frogs tend to hop higher, and body size is a continuous measure, not a group. ANCOVA lets us test whether color still matters after accounting for body size. The continuous variable we account for is called a covariate.",
+      "Let's assume bigger frogs tend to hop higher and we will treat frog size as a continuous measure. ANCOVA lets us test whether color still matters after accounting for body size. The continuous variable we account for is called a covariate.",
       "In this sample, the yellow frogs look like the best jumpers, but they also happen to be the biggest.",
     ],
     controls: () => `<div class="switches">${toggle("s5-adj", "Account for body size", false)}</div>`,
