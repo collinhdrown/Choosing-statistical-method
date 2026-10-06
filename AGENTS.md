@@ -3,7 +3,7 @@
 ## Project
 
 - This is a Python command-line assistant that recommends statistical methods from a research description.
-- The web app is `server.py` (FastAPI) serving the page in `static/`; `main.py` is the CLI entry point and holds the OpenAI helpers both use. All decision logic lives in `stat_engine.py`. The Quiz yourself tab's questions live in `quiz_bank.py` (served at `/api/quizzes`, drawn by `static/quiz.js`).
+- The web app is `server.py` (FastAPI) serving the page in `static/`; `main.py` is the CLI entry point and holds the OpenAI helpers both use. All decision logic lives in `stat_engine.py`. The Quiz yourself tab's questions live in `quiz_bank.py` (served at `/api/quizzes`, drawn by `static/quiz.js`). The ANOVA lab tab (`static/anova.js`) is front-end only: it builds its demo data and runs its ANOVA, ANCOVA and MANOVA math in the browser.
 - Runtime dependencies are listed in `requirements.txt`: OpenAI, Pydantic, python-dotenv, FastAPI and Uvicorn.
 - The application expects `OPENAI_API_KEY` in a local `.env` file beside `main.py` (or as a real environment variable when deployed, e.g. on Render) and calls the OpenAI API.
 
